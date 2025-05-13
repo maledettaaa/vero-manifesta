@@ -54,6 +54,14 @@
     "title": "Experimental Work",
     "details": "An experimental work that pushes the boundaries of traditional media and explores new possibilities in visual expression.",
     "position": [1, 4, -3]
+  },
+  {
+    "id": 8, 
+    "path": "assets/img/sabrina.jpg",
+    "description": "Descrizione per Immagine 7",
+    "title": "Experimental Work",
+    "details": "An experimental work that pushes the boundaries of traditional media and explores new possibilities in visual expression.",
+    "position": [2, 1, -3]
   } 
 ]
  

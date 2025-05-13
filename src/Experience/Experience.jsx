@@ -436,6 +436,18 @@ function FixedImagePopup({ image, onClose, onNext, onPrevious }) {
   const textBoxRoundedMask = useMemo(() => 
     createRoundedRectTexture(textBoxWidth * 100, textBoxHeight * 100, cornerRadius * 100)
   , [textBoxWidth, textBoxHeight, cornerRadius]);
+
+  // New mask for the main card background
+  const cardRoundedMask = useMemo(() =>
+    createRoundedRectTexture(cardWidth * 100, cardHeight * 100, cornerRadius * 100)
+  , [cardWidth, cardHeight, cornerRadius]);
+
+  // New mask for the close button (to make it circular)
+  const closeButtonSize = 0.5; // Matches the Plane args for the close button
+  const closeButtonRadius = closeButtonSize / 2; // For a perfect circle
+  const closeButtonMask = useMemo(() =>
+    createRoundedRectTexture(closeButtonSize * 100, closeButtonSize * 100, closeButtonRadius * 100)
+  , [closeButtonSize, closeButtonRadius]);
   
   return (
     <group ref={popupRef} renderOrder={1000}>
@@ -455,7 +467,13 @@ function FixedImagePopup({ image, onClose, onNext, onPrevious }) {
           args={[cardWidth, cardHeight]} 
           position={[0, 0, 0]}
         >
-          <meshBasicMaterial color="#ffffff" depthTest={false} />
+          <meshBasicMaterial
+            color="#ffffff"
+            depthTest={false}
+            alphaMap={cardRoundedMask} // Apply rounded corners to the main card
+            transparent={true}
+            alphaTest={0.5}
+          />
         </Plane>
         
         {/* Image container - fixed position and size */}
@@ -545,8 +563,15 @@ function FixedImagePopup({ image, onClose, onNext, onPrevious }) {
         
         {/* Close button (X) */}
         <group position={[cardWidth/2 - 0.5, cardHeight/2 - 0.5, 0.02]}>
-          <Plane args={[0.5, 0.5]} position={[0, 0, 0]} onClick={onClose}>
-            <meshBasicMaterial color="#ff5555" transparent opacity={0.9} depthTest={false} />
+          <Plane args={[closeButtonSize, closeButtonSize]} position={[0, 0, 0]} onClick={onClose}>
+            <meshBasicMaterial
+              color="#ff5555"
+              transparent
+              opacity={0.9}
+              depthTest={false}
+              alphaMap={closeButtonMask} // Apply circular mask to the close button
+              alphaTest={0.5}
+            />
           </Plane>
           <Text
             position={[0, 0, 0.01]}
@@ -564,22 +589,122 @@ function FixedImagePopup({ image, onClose, onNext, onPrevious }) {
   );
 }
 
+// New component to manage camera controls and animation
+function CameraRigAndAnimator({ showPopup }) {
+  const controlsRef = useRef();
+  const [animationTargetPosition, setAnimationTargetPosition] = useState(null);
+  const [animationTargetLookAt, setAnimationTargetLookAt] = useState(null);
+
+  // Keyboard navigation handler
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (showPopup) return; // Controlled by prop
+      
+      const moveDistance = 0.5; // This now defines the total distance of the animated pan
+      
+      if (!controlsRef.current) return;
+
+      const controls = controlsRef.current;
+      const camera = controls.object;
+
+      camera.updateMatrixWorld();
+
+      const localX = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
+      const localY = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
+      
+      const panVector = new THREE.Vector3();
+
+      switch (event.key) {
+        case 'ArrowUp':
+          panVector.copy(localY).multiplyScalar(moveDistance);
+          break;
+        case 'ArrowDown':
+          panVector.copy(localY).multiplyScalar(-moveDistance);
+          break;
+        case 'ArrowLeft':
+          panVector.copy(localX).multiplyScalar(-moveDistance);
+          break;
+        case 'ArrowRight':
+          panVector.copy(localX).multiplyScalar(moveDistance);
+          break;
+        default:
+          return; 
+      }
+
+      const currentCamPos = camera.position.clone();
+      const currentLookAt = controls.target.clone();
+
+      setAnimationTargetPosition(currentCamPos.add(panVector));
+      setAnimationTargetLookAt(currentLookAt.add(panVector.clone()));
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showPopup]); // Dependency on showPopup
+
+  // Animation logic
+  useFrame(() => {
+    if (!controlsRef.current) return;
+
+    const controls = controlsRef.current;
+    const camera = controls.object;
+
+    if (animationTargetPosition && animationTargetLookAt) {
+      const lerpFactor = 0.1; // Adjust for animation speed
+
+      camera.position.lerp(animationTargetPosition, lerpFactor);
+      controls.target.lerp(animationTargetLookAt, lerpFactor);
+      controls.update(); // Important: update controls as camera/target moves
+
+      const distanceToTargetPos = camera.position.distanceTo(animationTargetPosition);
+      const distanceToTargetLookAt = controls.target.distanceTo(animationTargetLookAt);
+      const threshold = 0.01; // How close is "close enough"
+
+      if (distanceToTargetPos < threshold && distanceToTargetLookAt < threshold) {
+        camera.position.copy(animationTargetPosition);
+        controls.target.copy(animationTargetLookAt);
+        
+        setAnimationTargetPosition(null);
+        setAnimationTargetLookAt(null);
+        
+        controls.update(); // Final update after snapping
+      }
+    }
+  });
+
+  return (
+    <MapControls 
+      ref={controlsRef}
+      enabled={!showPopup} // Controlled by prop
+      mouseButtons={{
+        LEFT: THREE.MOUSE.PAN,
+        MIDDLE: THREE.MOUSE.DOLLY,
+        RIGHT: THREE.MOUSE.ROTATE
+      }}
+      enableDamping={true}
+      dampingFactor={0.05}
+      screenSpacePanning={true}
+    />
+  );
+}
+
 function Experience() {
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
-  const [popupText, setPopupText] = useState('');
+  // const [popupText, setPopupText] = useState(''); // popupText seems unused, can be removed if not needed
   const planePositions = useMemo(() => 
     imagesData.map(image => image.position || [0, 0, 0])
   , []);
   
-  // Add a ref to store the camera controls
-  const controlsRef = useRef();
+  // Removed controlsRef, animationTargetPosition, animationTargetPosition from Experience state
 
   const handleImageClick = useCallback((id, path, position) => {
     const index = imagesData.findIndex(img => img.id === id);
     setSelectedImageIndex(index);
     setShowPopup(true);
-    setPopupText(''); // Or load saved text for this image if you want
+    // setPopupText(''); // Or load saved text for this image if you want
   }, []);
 
   const handleClosePopup = useCallback(() => {
@@ -588,76 +713,26 @@ function Experience() {
 
   const handleNext = useCallback(() => {
     setSelectedImageIndex((prev) => (prev + 1) % imagesData.length);
-    setPopupText('');
+    // setPopupText('');
   }, []);
 
   const handlePrevious = useCallback(() => {
     setSelectedImageIndex((prev) => (prev - 1 + imagesData.length) % imagesData.length);
-    setPopupText('');
+    // setPopupText('');
   }, []);
   
-  // Add keyboard navigation handler
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-      // Only handle arrow keys when popup is not shown
-      if (showPopup) return;
-      
-      const moveDistance = 1.0; // Adjust this value to control movement speed
-      
-      // Check if controls exist before attempting to use them
-      if (!controlsRef.current) return;
-      
-      switch (event.key) {
-        case 'ArrowUp':
-          controlsRef.current.target.y += moveDistance;
-          controlsRef.current.update();
-          break;
-        case 'ArrowDown':
-          controlsRef.current.target.y -= moveDistance;
-          controlsRef.current.update();
-          break;
-        case 'ArrowLeft':
-          controlsRef.current.target.x -= moveDistance;
-          controlsRef.current.update();
-          break;
-        case 'ArrowRight':
-          controlsRef.current.target.x += moveDistance;
-          controlsRef.current.update();
-          break;
-        default:
-          break;
-      }
-    };
-    
-    // Add event listener
-    window.addEventListener('keydown', handleKeyDown);
-    
-    // Clean up
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [showPopup]);
+  // Removed useEffect for handleKeyDown and useFrame from Experience component
 
   return (
     <Canvas camera={{ fov: 75, position: [0, 0, 10] }}>
       <ambientLight intensity={0.6} />
       <directionalLight position={[10, 10, 10]} intensity={1} />
       <Suspense fallback={null}>
-        <MapControls 
-          ref={controlsRef}
-          enabled={!showPopup} 
-          mouseButtons={{
-            LEFT: THREE.MOUSE.PAN,
-            MIDDLE: THREE.MOUSE.DOLLY,
-            RIGHT: THREE.MOUSE.ROTATE  // Restored to original ROTATE
-          }}
-          enableDamping={true}
-          dampingFactor={0.05}
-          screenSpacePanning={true}
-        />
+        {/* Render the new CameraRigAndAnimator component here */}
+        <CameraRigAndAnimator showPopup={showPopup} />
         
         {/* Image Grid */}
-        <group renderOrder={100}>
+        <group renderOrder={100}> {/* Ensure images are rendered above potential background elements */}
           {imagesData.map((image, index) => (
             <group key={image.id}>
               <ImagePlane

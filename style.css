@@ -1,0 +1,367 @@
+body {
+    font-family: 'League Spartan', sans-serif;
+    margin: 0;
+    padding: 0;
+    color: #333; /* Default text color for content inside main/header */
+    line-height: 1.6;
+    background-color: #111111; /* Dark background for particles */
+    overflow-x: hidden; /* Prevent horizontal scroll */
+}
+
+#particle-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1; /* Place it behind all other content */
+    display: block;
+}
+
+header {
+    background-color: rgba(255, 255, 255, 0.1); /* Semi-transparent header */
+    backdrop-filter: blur(5px); /* Frosted glass effect */
+    color: #333; /* Dark text for contrast on light bg */
+    padding: 1rem 5%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 1000; /* Ensure header is above other content */
+    border-bottom: 1px solid rgba(50, 50, 50, 0.2); /* Adjusted border for dark theme */
+}
+
+.logo {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #f0f0f0; /* Light logo text for dark theme */
+}
+
+.nav-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+}
+
+.nav-item {
+    margin-left: 2rem;
+}
+
+.nav-link {
+    text-decoration: none;
+    color: #e0e0e0; /* Light nav links for dark theme */
+    font-weight: bold;
+    font-size: 1rem;
+    transition: color 0.3s ease;
+}
+
+.nav-link:hover {
+    color: #ffffff; /* Brighter white on hover */
+}
+
+.nav-toggle {
+    display: none; /* Hidden by default, shown in media query */
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    z-index: 1001; /* Ensure it's above other header content if overlapping */
+}
+
+.hamburger {
+    display: block;
+    width: 25px;
+    height: 3px;
+    background-color: #f0f0f0; /* Light hamburger icon for dark theme */
+    position: relative;
+    transition: transform 0.3s ease, background-color 0.3s ease;
+}
+
+.hamburger::before,
+.hamburger::after {
+    content: '';
+    position: absolute;
+    width: 25px;
+    height: 3px;
+    background-color: #f0f0f0; /* Light hamburger icon bars */
+    left: 0;
+    transition: transform 0.3s ease, top 0.3s ease, bottom 0.3s ease, opacity 0.3s ease;
+}
+
+.hamburger::before {
+    top: -8px;
+}
+
+.hamburger::after {
+    bottom: -8px;
+}
+
+/* Hamburger animation for active state */
+.nav-toggle.active .hamburger {
+    background-color: transparent; /* Middle bar disappears */
+}
+
+.nav-toggle.active .hamburger::before {
+    top: 0;
+    transform: rotate(45deg);
+}
+
+.nav-toggle.active .hamburger::after {
+    bottom: 0; /* Or top: 0; depending on desired X formation */
+    transform: rotate(-45deg);
+}
+
+
+main {
+    padding: 2rem 5%;
+    background-color: rgba(34, 34, 34, 0.7); /* Darker semi-transparent main content area */
+    backdrop-filter: blur(3px);
+    margin: 2rem auto; /* Center main content */
+    max-width: 1200px; /* Max width for content */
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    color: #e0e0e0; /* Light text for content within main */
+}
+
+.intro {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.intro h1 {
+    font-size: 2.5rem;
+    color: #ffffff; /* White heading */
+    margin-bottom: 1rem;
+}
+
+.intro p {
+    font-size: 1.1rem;
+    color: #cccccc; /* Lighter grey paragraph text */
+    max-width: 800px;
+    margin: 0 auto 1.5rem auto;
+}
+
+.intro-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    margin-top: 1rem;
+    max-height: 300px;
+    object-fit: cover;
+}
+
+
+.carousel-container {
+    position: relative;
+    max-width: 800px;
+    margin: 2rem auto;
+    overflow: hidden;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+}
+
+.carousel {
+    display: flex; /* This is for a sliding carousel, but your JS uses fade */
+    /* For fade transition, this flex display isn't strictly necessary if slides are absolute */
+}
+
+.carousel-slide {
+    min-width: 100%;
+    box-sizing: border-box;
+    opacity: 0;
+    transition: opacity 0.7s ease-in-out; /* Smoother fade */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    visibility: hidden; /* Hide non-active slides for accessibility */
+}
+
+.carousel-slide.active-slide {
+    opacity: 1;
+    position: relative; /* Takes up space in flow */
+    z-index: 1;
+    visibility: visible;
+}
+
+
+.carousel-slide img {
+    width: 100%;
+    display: block;
+    height: 450px;
+    object-fit: cover;
+    border-radius: 8px; /* If carousel container has radius, images might need it too */
+}
+
+.carousel-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: rgba(0, 0, 0, 0.4);
+    color: white;
+    border: none;
+    padding: 1rem;
+    cursor: pointer;
+    z-index: 10;
+    font-size: 1.5rem;
+    transition: background-color 0.3s ease;
+    border-radius: 50%; /* Circular buttons */
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.carousel-button:hover {
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+.prev {
+    left: 15px;
+}
+
+.next {
+    right: 15px;
+}
+
+.carousel-dots {
+    text-align: center;
+    padding: 1rem 0;
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+}
+
+.carousel-dot {
+    height: 12px;
+    width: 12px;
+    margin: 0 5px;
+    background-color: rgba(255, 255, 255, 0.4);
+    border-radius: 50%;
+    display: inline-block;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    border: 1px solid rgba(0,0,0,0.2);
+}
+
+.carousel-dot.active {
+    background-color: rgba(255, 255, 255, 0.9);
+    transform: scale(1.2);
+}
+
+
+footer {
+    text-align: center;
+    padding: 2rem 5%;
+    background-color: rgba(17, 17, 17, 0.8); /* Darker footer, consistent with dark theme */
+    backdrop-filter: blur(3px);
+    color: #aaaaaa; /* Lighter grey for footer text */
+    margin-top: 2rem;
+    border-top: 1px solid rgba(50,50,50,0.3);
+}
+
+.footer-logo {
+    max-width: 100px;
+    margin-top: 0.5rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    header {
+        flex-direction: row; /* Keep logo and toggle on same line */
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 3%;
+    }
+
+    .nav {
+        /* Position nav for dropdown */
+        position: absolute;
+        top: 100%; /* Below the header */
+        left: 0;
+        right: 0;
+        background-color: rgba(30, 30, 30, 0.95); /* Background for dropdown */
+        backdrop-filter: blur(5px);
+        margin-top: 0;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+
+    .nav-list {
+        flex-direction: column;
+        width: 100%;
+        display: none; /* Hidden by default on mobile */
+        padding: 1rem 0;
+    }
+
+    .nav-list.active {
+        display: flex; /* Show when active (toggled by JS) */
+    }
+
+    .nav-item {
+        margin: 0; /* Remove side margin */
+        width: 100%;
+        text-align: center;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .nav-item:last-child {
+        border-bottom: none;
+    }
+
+    .nav-link {
+        display: block;
+        padding: 1rem;
+        color: #f0f0f0; /* Ensure links are visible on dark dropdown */
+        font-size: 1.1rem;
+    }
+    .nav-link:hover {
+        background-color: rgba(255,255,255,0.1);
+    }
+
+    .nav-toggle {
+        display: block; /* Show hamburger icon */
+        /* No need for absolute positioning if header is flex row */
+    }
+
+    main {
+        padding: 1.5rem 3%;
+        margin: 1rem auto;
+    }
+
+    .intro h1 {
+        font-size: 2rem;
+    }
+
+    .intro p {
+        font-size: 1rem;
+    }
+
+    .carousel-slide img {
+        height: 300px; /* Adjust carousel height for mobile */
+    }
+
+    .carousel-button {
+        padding: 0.8rem;
+        font-size: 1.2rem;
+        width: 40px;
+        height: 40px;
+    }
+    .prev { left: 10px; }
+    .next { right: 10px; }
+
+    .carousel-dot {
+        height: 10px;
+        width: 10px;
+    }
+}
+    
+IGNORE_WHEN_COPYING_START
+content_copy download
+Use code with caution. Css
+IGNORE_WHEN_COPYING_END
+
